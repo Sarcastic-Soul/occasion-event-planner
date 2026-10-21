@@ -35,7 +35,7 @@ Form ──► /api/plan ──► buildBasePlan (rules) ──► Gemini enrich
 
 ## Gen AI used
 
-- **Gemini API** (`@google/genai`, model set by `GEMINI_MODEL`, default `gemini-flash-latest`), called only from the server:
+- **Gemini API** (`@google/genai`), called only from the server. It tries `gemini-flash-latest`, then `gemini-3-flash-preview`, then `gemini-flash-lite-latest` when a model is busy or retired (override with a comma-separated `GEMINI_MODEL`):
   - `/api/plan`: personal ideas, extra tasks, budget tips and a summary, using structured JSON output (`responseJsonSchema`) built from the same Zod schema that validates the reply.
   - `/api/refine`: turns a plain-language change request into specific field changes, which are re-checked against the form rules before the plan is rebuilt.
 
@@ -51,7 +51,7 @@ Form ──► /api/plan ──► buildBasePlan (rules) ──► Gemini enrich
 ## Efficiency
 
 - The rule-based plan is pure and fast, so it also runs in the browser as a live preview: no network call while typing.
-- One Gemini call per plan, with a 20 s timeout. Results are kept in a small in-memory LRU cache, so the same request does not call the model twice.
+- One Gemini call per plan, with a 15 s timeout per model. Results are kept in a small in-memory LRU cache, so the same request does not call the model twice.
 - No UI framework beyond React, no images, CSS-only motion on `transform` and `opacity`, and fonts self-hosted by `next/font`.
 
 ## Accessibility

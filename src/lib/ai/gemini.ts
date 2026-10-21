@@ -1,42 +1,57 @@
 import "server-only";
-import { GoogleGenAI } from "@google/genai";
+import { ApiError, GoogleGenAI } from "@google/genai";
 import { AiUnavailableError, type JsonGenerator } from "./generator";
 
-const DEFAULT_MODEL = "gemini-flash-latest";
-const TIMEOUT_MS = 20_000;
+/** Tried in order; the next model is used when one is busy or retired. */
+const DEFAULT_MODELS = ["gemini-flash-latest", "gemini-3-flash-preview", "gemini-flash-lite-latest"];
+const TIMEOUT_MS = 15_000;
+/** Overloaded, rate limited or no longer offered: worth trying another model. */
+const RETRYABLE_STATUS = new Set([404, 429, 500, 503]);
 
 class GeminiGenerator implements JsonGenerator {
   constructor(
     private readonly client: GoogleGenAI,
-    private readonly model: string,
+    private readonly models: string[],
   ) {}
 
   async generate({ system, prompt, schema }: { system: string; prompt: string; schema: object }): Promise<string> {
-    const response = await this.client.models.generateContent({
-      model: this.model,
-      contents: prompt,
-      config: {
-        systemInstruction: system,
-        responseMimeType: "application/json",
-        responseJsonSchema: schema,
-        temperature: 0.7,
-        abortSignal: AbortSignal.timeout(TIMEOUT_MS),
-      },
-    });
-    const text = response.text;
-    if (!text) throw new AiUnavailableError("Empty response from Gemini");
-    return text;
+    let lastError: unknown;
+    for (const model of this.models) {
+      try {
+        const response = await this.client.models.generateContent({
+          model,
+          contents: prompt,
+          config: {
+            systemInstruction: system,
+            responseMimeType: "application/json",
+            responseJsonSchema: schema,
+            temperature: 0.7,
+            abortSignal: AbortSignal.timeout(TIMEOUT_MS),
+          },
+        });
+        if (response.text) return response.text;
+        lastError = new AiUnavailableError(`Empty response from ${model}`);
+      } catch (error) {
+        lastError = error;
+        if (error instanceof ApiError && !RETRYABLE_STATUS.has(error.status)) throw error;
+      }
+    }
+    throw lastError;
   }
 }
 
 let cached: JsonGenerator | null | undefined;
 
-/** Returns a Gemini client when GEMINI_API_KEY is set, otherwise null so callers fall back to rules. */
+/**
+ * Returns a Gemini client when GEMINI_API_KEY is set, otherwise null so callers fall back to rules.
+ * GEMINI_MODEL may list several comma-separated models to try in order.
+ */
 export function getGemini(): JsonGenerator | null {
   if (cached !== undefined) return cached;
   const apiKey = process.env.GEMINI_API_KEY;
+  const configured = process.env.GEMINI_MODEL?.split(",").map((m) => m.trim()).filter(Boolean);
   cached = apiKey
-    ? new GeminiGenerator(new GoogleGenAI({ apiKey }), process.env.GEMINI_MODEL || DEFAULT_MODEL)
+    ? new GeminiGenerator(new GoogleGenAI({ apiKey }), configured?.length ? configured : DEFAULT_MODELS)
     : null;
   return cached;
 }
