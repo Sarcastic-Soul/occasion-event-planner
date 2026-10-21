@@ -1,0 +1,87 @@
+.layout {
+  display: grid;
+  grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+  gap: 56px;
+  align-items: start;
+  max-width: 1360px;
+  margin: 0 auto;
+  padding: 56px 48px 96px;
+}
+
+.intro {
+  display: grid;
+}
+
+/* Keep the form in view beside a long plan, but only where the whole form fits on screen. */
+@media (min-width: 961px) and (min-height: 1180px) {
+  .intro {
+    position: sticky;
+    top: 24px;
+  }
+}
+
+.h1 {
+  font: 400 clamp(44px, 5.4vw, 72px) / 1.02 var(--font-display);
+  letter-spacing: -0.02em;
+}
+
+.h1 em {
+  color: var(--accent);
+}
+
+.lede {
+  color: var(--muted);
+  margin: 20px 0 36px;
+  max-width: 44ch;
+  font-size: 18px;
+}
+
+.placeholder,
+.status,
+.statusError {
+  font-size: 15px;
+  margin-top: 14px;
+  min-height: 1.5em;
+}
+
+.placeholder,
+.status {
+  color: var(--muted);
+}
+
+.statusError {
+  color: var(--error);
+  font-weight: 600;
+}
+
+.sheetColumn {
+  min-width: 0;
+}
+
+.blank {
+  display: grid;
+  place-items: center;
+  min-height: 420px;
+  border: 1px dashed var(--rule-strong);
+  color: var(--muted);
+  padding: 32px;
+  text-align: center;
+}
+
+@media (max-width: 960px) {
+  .layout {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding: 32px 16px 64px;
+  }
+}
+
+@media print {
+  .layout {
+    display: block;
+    padding: 0;
+  }
+  .intro {
+    display: none;
+  }
+}

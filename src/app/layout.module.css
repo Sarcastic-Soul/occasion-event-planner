@@ -1,0 +1,32 @@
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  padding: 22px 48px;
+  border-bottom: 1px solid var(--rule);
+}
+
+.logo {
+  font: 600 22px var(--font-display);
+}
+
+.tag {
+  color: var(--muted);
+  font-size: 14px;
+}
+
+@media (max-width: 960px) {
+  .header {
+    padding: 18px 16px;
+  }
+  .tag {
+    display: none;
+  }
+}
+
+@media print {
+  .header {
+    display: none;
+  }
+}
