@@ -38,6 +38,10 @@ export function requestPlan(input: EventInput, today: string, signal?: AbortSign
   return post<EventPlan>("/api/plan", { input, today }, signal);
 }
 
+/** Refining makes two model calls on the server, so give up after the server's own limit. */
+const REFINE_TIMEOUT_MS = 60_000;
+
 export function requestRefine(input: EventInput, today: string, message: string) {
-  return post<{ reply: string; plan: EventPlan | null }>("/api/refine", { input, today, message });
+  const body = { input, today, message };
+  return post<{ reply: string; plan: EventPlan | null }>("/api/refine", body, AbortSignal.timeout(REFINE_TIMEOUT_MS));
 }

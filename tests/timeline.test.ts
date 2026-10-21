@@ -55,9 +55,24 @@ describe("buildVendors", () => {
     expect(has(80)).toBe(false);
   });
 
-  test("never sets a book-by date in the past", () => {
+  test("never sets a book-by date in the past, and flags late bookings", () => {
     const vendors = buildVendors(makeInput({ date: "2026-11-05" }), TODAY);
     expect(vendors.every((v) => v.bookBy >= TODAY)).toBe(true);
+    const venue = vendors.find((v) => v.id === "venue")!;
+    expect(venue).toMatchObject({ bookBy: TODAY, late: true });
+  });
+
+  test("swaps the venue for a rental supplier at home", () => {
+    const ids = buildVendors(makeInput({ setting: "home" }), TODAY).map((v) => v.id);
+    expect(ids).toContain("rentals");
+    expect(ids).not.toContain("venue");
+  });
+
+  test("adds a canopy outdoors and accessible transport for older guests", () => {
+    const ids = buildVendors(makeInput({ setting: "outdoor", considerations: ["elderly"] }), TODAY).map((v) => v.id);
+    expect(ids).toContain("canopy");
+    expect(ids).toContain("transport");
+    expect(buildVendors(makeInput(), TODAY).map((v) => v.id)).not.toContain("canopy");
   });
 });
 

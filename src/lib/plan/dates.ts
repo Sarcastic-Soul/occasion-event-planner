@@ -18,6 +18,16 @@ export function addDays(iso: string, days: number): string {
   return formatDay(parseDay(iso) + days * DAY_MS);
 }
 
+/**
+ * The date to act by for something needed `weeksBefore` the event.
+ * When that date has passed it becomes today, flagged as late.
+ */
+export function leadDate(eventDate: string, weeksBefore: number, today: string): { date: string; late: boolean } {
+  const leadDays = weeksBefore * 7;
+  if (leadDays > daysBetween(today, eventDate)) return { date: today, late: true };
+  return { date: addDays(eventDate, -leadDays), late: false };
+}
+
 export function isRealDate(iso: string): boolean {
   return formatDay(parseDay(iso)) === iso;
 }

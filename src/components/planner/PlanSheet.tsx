@@ -26,10 +26,11 @@ export function PlanSheet({ plan, stale, isDone, onToggle, onRefine }: Props) {
 
   return (
     <article className={styles.sheet} aria-labelledby="plan-title">
-      <p className={styles.stamp} aria-label={`${plan.daysLeft} days until the event`}>
+      <p className={styles.stamp}>
         {plan.daysLeft === 0 ? "Today" : `${plan.daysLeft} ${plan.daysLeft === 1 ? "day" : "days"} to go`}
+        <span className="visually-hidden"> until the event</span>
       </p>
-      <h2 id="plan-title" className={styles.title}>
+      <h2 id="plan-title" className={styles.title} tabIndex={-1}>
         {input.title ? `${input.title} — ` : ""}
         {EVENT_NAMES[input.eventType]}
       </h2>
@@ -37,11 +38,12 @@ export function PlanSheet({ plan, stale, isDone, onToggle, onRefine }: Props) {
         {formatDate(input.date)} · {input.guests} guests · {money(budget.total)}
       </p>
 
-      {stale && (
-        <p className={styles.notice} role="status">
-          Details changed. Press “Draft my plan” to refresh this plan and its ideas.
-        </p>
-      )}
+      {/* Always in the page, so screen readers announce the text when it appears. */}
+      <div role="status">
+        {stale && (
+          <p className={styles.notice}>Details changed. Press “Draft my plan” to refresh this plan and its ideas.</p>
+        )}
+      </div>
       {plan.summary && !stale && <p className={styles.summary}>{plan.summary}</p>}
 
       <section aria-labelledby="budget-h">
@@ -80,8 +82,8 @@ export function PlanSheet({ plan, stale, isDone, onToggle, onRefine }: Props) {
         </table>
         {drafted && plan.budgetTips.length > 0 && (
           <ul className={styles.tips}>
-            {plan.budgetTips.map((tip) => (
-              <li key={tip}>{tip}</li>
+            {plan.budgetTips.map((tip, i) => (
+              <li key={`${i}-${tip}`}>{tip}</li>
             ))}
           </ul>
         )}
@@ -92,25 +94,35 @@ export function PlanSheet({ plan, stale, isDone, onToggle, onRefine }: Props) {
           Do this week
         </h3>
         <TaskList tasks={thisWeek} isDone={isDone} onToggle={onToggle} empty="Nothing due this week." />
-        <h3 className={styles.heading}>Then</h3>
+        <h3 id="later-h" className={styles.heading}>
+          Then
+        </h3>
         <TaskList tasks={later} isDone={isDone} onToggle={onToggle} empty="Everything left is due this week." />
       </section>
 
       <section aria-labelledby="vendor-h">
         <h3 id="vendor-h" className={styles.heading}>
-          Vendors to book
+          Vendor checklist
         </h3>
         <ul className={styles.vendors}>
-          {vendors.map((v) => (
-            <li key={v.id}>
-              <div className={styles.vendorHead}>
-                <strong>{v.name}</strong>
-                <span className={styles.date}>by {formatDate(v.bookBy)}</span>
-              </div>
-              <p>{v.why}</p>
-              {v.tip && <p className={styles.tip}>{v.tip}</p>}
-            </li>
-          ))}
+          {vendors.map((v) => {
+            const done = isDone(`vendor/${v.id}`);
+            return (
+              <li key={v.id} className={done ? styles.done : undefined}>
+                <div className={styles.vendorHead}>
+                  <label>
+                    <input type="checkbox" checked={done} onChange={() => onToggle(`vendor/${v.id}`)} />
+                    <strong>{v.name}</strong>
+                  </label>
+                  <span className={v.late ? styles.late : styles.date}>
+                    {v.late ? "Book now, late" : `by ${formatDate(v.bookBy)}`}
+                  </span>
+                </div>
+                <p>{v.why}</p>
+                {v.tip && <p className={styles.tip}>{v.tip}</p>}
+              </li>
+            );
+          })}
         </ul>
       </section>
 
@@ -128,8 +140,8 @@ export function PlanSheet({ plan, stale, isDone, onToggle, onRefine }: Props) {
           </span>
         </h3>
         <ul className={styles.ideas}>
-          {ideas.map((idea) => (
-            <li key={idea.title}>
+          {ideas.map((idea, i) => (
+            <li key={`${i}-${idea.title}`}>
               <strong>{idea.title}</strong>
               <span className={styles.cost}>{COST_LABELS[idea.costHint]}</span>
               <p>{idea.description}</p>

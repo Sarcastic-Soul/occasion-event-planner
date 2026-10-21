@@ -1,6 +1,8 @@
 import { describe, expect, test } from "bun:test";
 import type { JsonGenerator } from "@/lib/ai/generator";
 import { createPlan, refineInput } from "@/lib/ai/planner";
+import { buildBasePlan, mergeEnrichment } from "@/lib/plan/build-plan";
+import type { AiEnrichment } from "@/lib/plan/schema";
 import { TODAY, makeInput } from "./fixtures";
 
 const fake = (reply: string | Error): JsonGenerator & { calls: number } => ({
@@ -12,7 +14,7 @@ const fake = (reply: string | Error): JsonGenerator & { calls: number } => ({
   },
 });
 
-const enrichment = {
+const enrichment: AiEnrichment = {
   summary: "A calm spring wedding.",
   ideas: [{ title: "Mango leaf toran", description: "Fresh entrance garland.", costHint: "low" }],
   extraTasks: [{ title: "Book mehendi artist", weeksBefore: 6 }],
@@ -53,5 +55,22 @@ describe("refineInput", () => {
     const result = await refineInput(makeInput(), TODAY, "only 60 people", ai);
     expect(result.input.guests).toBe(60);
     expect(ai.calls).toBe(1);
+  });
+});
+
+describe("mergeEnrichment", () => {
+  test("gives AI tasks ids from their titles, so ticks survive a redraft", () => {
+    const base = buildBasePlan(makeInput(), TODAY);
+    const tasks = [
+      { title: "Book mehendi artist", weeksBefore: 6 },
+      { title: "Book mehendi artist!", weeksBefore: 5 },
+    ];
+    const ids = (order: typeof tasks) =>
+      mergeEnrichment(base, { ...enrichment, extraTasks: order }, TODAY)
+        .timeline.filter((t) => t.source === "ai")
+        .map((t) => t.id)
+        .sort();
+    expect(ids(tasks)).toEqual(["ai-book-mehendi-artist", "ai-book-mehendi-artist-2"]);
+    expect(ids([tasks[0]])).toEqual(["ai-book-mehendi-artist"]);
   });
 });

@@ -1,4 +1,4 @@
-import type { Currency, EventInput, EventType } from "./schema";
+import { needsAccess, type Currency, type EventInput, type EventType } from "./schema";
 import type { BudgetLine, BudgetPlan } from "./types";
 
 interface Category {
@@ -61,7 +61,7 @@ export function adjustSplit(input: EventInput): Category[] {
   if (input.setting === "outdoor") {
     cats.push({ id: "weather", label: "Weather backup (canopy, fans)", weight: 0.06 });
   }
-  if (input.considerations.includes("accessibility") || input.considerations.includes("elderly")) {
+  if (needsAccess(input)) {
     cats.push({ id: "access", label: "Access (ramps, seating, transport)", weight: 0.04 });
   }
 
@@ -83,20 +83,16 @@ export function buildBudget(input: EventInput, daysLeft: number): BudgetPlan {
   const reserve = bufferShare(daysLeft);
   const spendable = total * (1 - reserve);
 
-  const lines: BudgetLine[] = adjustSplit(input).map((c) => {
-    const amount = Math.floor((spendable * c.weight) / step) * step;
-    return { id: c.id, label: c.label, amount, share: 0 };
-  });
+  const amounts = adjustSplit(input).map((c) => ({
+    id: c.id,
+    label: c.label,
+    amount: Math.floor((spendable * c.weight) / step) * step,
+  }));
 
   // Whatever rounding left over goes to the buffer, so lines always add up to the total.
-  const allocated = lines.reduce((s, l) => s + l.amount, 0);
-  lines.push({
-    id: "buffer",
-    label: `Buffer (${Math.round(reserve * 100)}%)`,
-    amount: total - allocated,
-    share: 0,
-  });
-  for (const line of lines) line.share = line.amount / total;
+  const allocated = amounts.reduce((s, l) => s + l.amount, 0);
+  amounts.push({ id: "buffer", label: `Buffer (${Math.round(reserve * 100)}%)`, amount: total - allocated });
+  const lines: BudgetLine[] = amounts.map((l) => ({ ...l, share: l.amount / total }));
 
   const perGuest = Math.floor(total / guests);
   const floor = PER_GUEST_FLOOR[eventType][currency];

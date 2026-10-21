@@ -40,5 +40,18 @@ describe("applyRefinement", () => {
     const result = applyRefinement(input, { reply: "Ok", changes: { ...noChanges, guests: 999_999 } }, TODAY);
     expect(result.changed).toBe(false);
     expect(result.input).toEqual(input);
+    expect(result.reply).toContain("Skipped: guests");
+  });
+
+  test("keeps a valid change when another one is out of range", () => {
+    const result = applyRefinement(
+      makeInput(),
+      { reply: "Ok", changes: { ...noChanges, guests: 999_999, budget: 900_000 } },
+      TODAY,
+    );
+    expect(result.changed).toBe(true);
+    expect(result.input.budget).toBe(900_000);
+    expect(result.input.guests).toBe(makeInput().guests);
+    expect(result.reply).toContain("Skipped: guests");
   });
 });

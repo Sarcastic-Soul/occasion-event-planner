@@ -1,5 +1,5 @@
-import { addDays, daysBetween } from "./dates";
-import type { EventInput, EventType } from "./schema";
+import { daysBetween, leadDate } from "./dates";
+import { needsAccess, type EventInput, type EventType } from "./schema";
 import type { TimelineTask } from "./types";
 
 interface TaskTemplate {
@@ -75,7 +75,7 @@ const EXTRA: TaskTemplate[] = [
     id: "access-check",
     title: "Walk the venue for step-free entry, accessible toilets and seating",
     weeksBefore: 8,
-    when: (i) => i.considerations.includes("accessibility") || i.considerations.includes("elderly"),
+    when: needsAccess,
   },
   {
     id: "diet",
@@ -111,13 +111,10 @@ interface ScheduleArgs {
  */
 export function scheduleTask(task: ScheduleArgs, eventDate: string, today: string): TimelineTask {
   const { id, title, weeksBefore, source, fallback } = task;
-  const leadDays = weeksBefore * 7;
-  if (leadDays > daysBetween(today, eventDate)) {
-    return { id, title, dueDate: today, status: "rushed", fallback, source };
-  }
-  const dueDate = addDays(eventDate, -leadDays);
-  const status = daysBetween(today, dueDate) <= 7 ? "due-now" : "upcoming";
-  return { id, title, dueDate, status, source };
+  const due = leadDate(eventDate, weeksBefore, today);
+  if (due.late) return { id, title, dueDate: due.date, status: "rushed", fallback, source };
+  const status = daysBetween(today, due.date) <= 7 ? "due-now" : "upcoming";
+  return { id, title, dueDate: due.date, status, source };
 }
 
 export function sortByDue(tasks: TimelineTask[]): TimelineTask[] {

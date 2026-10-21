@@ -1,7 +1,7 @@
 import { z } from "zod";
 import { buildBasePlan, mergeEnrichment } from "../plan/build-plan";
 import { aiEnrichmentSchema, aiRefinementSchema, type EventInput } from "../plan/schema";
-import type { EventPlan } from "../plan/types";
+import type { EventPlan, RefineResult } from "../plan/types";
 import { applyRefinement } from "../plan/refine";
 import type { JsonGenerator } from "./generator";
 import { ENRICH_SYSTEM, REFINE_SYSTEM, enrichPrompt, refinePrompt } from "./prompts";
@@ -34,12 +34,6 @@ export async function createPlan(
   } catch {
     return base;
   }
-}
-
-export interface RefineResult {
-  input: EventInput;
-  reply: string;
-  changed: boolean;
 }
 
 /** Turns a plain-language request ("cut the budget by 20%") into a checked, updated input. */

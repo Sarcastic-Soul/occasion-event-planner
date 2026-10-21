@@ -17,9 +17,10 @@ export function Planner() {
     p.updateDraft({ ...fresh, title: p.draft.title, notes: p.draft.notes, currency: p.draft.currency });
   };
 
+  // Focus follows the result: the first bad field, or the new plan's title.
   const submit = async () => {
-    const invalidField = await p.submit();
-    if (invalidField) document.getElementById(invalidField)?.focus();
+    const target = await p.submit();
+    if (target) document.getElementById(target === "plan" ? "plan-title" : target)?.focus();
   };
 
   return (

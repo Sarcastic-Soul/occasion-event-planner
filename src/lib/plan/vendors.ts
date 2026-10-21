@@ -1,5 +1,5 @@
-import { addDays, daysBetween } from "./dates";
-import type { EventInput, EventType } from "./schema";
+import { leadDate } from "./dates";
+import { needsAccess, type EventInput, type EventType } from "./schema";
 import type { VendorItem } from "./types";
 
 interface VendorTemplate {
@@ -105,7 +105,7 @@ const VENDORS: VendorTemplate[] = [
     name: "Accessible transport",
     weeksBefore: { wedding: 4, birthday: 2, community: 3 },
     why: () => "Step-free vehicle for guests who use wheelchairs or cannot walk far.",
-    when: (i) => i.considerations.includes("accessibility") || i.considerations.includes("elderly"),
+    when: needsAccess,
   },
   {
     id: "canopy",
@@ -118,19 +118,12 @@ const VENDORS: VendorTemplate[] = [
 
 /** Picks vendors that fit the event and gives each a book-by date (today if already late). */
 export function buildVendors(input: EventInput, today: string): VendorItem[] {
-  const daysLeft = daysBetween(today, input.date);
   const items: VendorItem[] = [];
   for (const v of VENDORS) {
     const weeks = v.weeksBefore[input.eventType];
     if (weeks === undefined || (v.when && !v.when(input))) continue;
-    const leadDays = weeks * 7;
-    items.push({
-      id: v.id,
-      name: v.name,
-      why: v.why(input),
-      tip: v.tip,
-      bookBy: leadDays > daysLeft ? today : addDays(input.date, -leadDays),
-    });
+    const due = leadDate(input.date, weeks, today);
+    items.push({ id: v.id, name: v.name, why: v.why(input), tip: v.tip, bookBy: due.date, late: due.late });
   }
   return items.sort((a, b) => a.bookBy.localeCompare(b.bookBy));
 }

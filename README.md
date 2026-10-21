@@ -2,7 +2,21 @@
 
 A planning assistant for weddings, birthdays and community events. Tell it the occasion, the date, the guest count and the budget, and it gives you a budget split, a timeline that counts back from the day, a vendor checklist sized to your guest list, and ideas made for your event by Gemini. You can then change the plan in plain words ("cut the budget by 20%", "make it 40 guests").
 
+**Live app:** https://occasion-event-planner.vercel.app
+**Demo video:** https://drive.google.com/file/d/1FETHGWW5HfSp-t5cJyqmHsXEoG-USNoV/view?usp=sharing
 **Chosen vertical:** Challenge 5, Celebration & Event Planner.
+
+![Occasion: the event form on the left, the drafted wedding plan with Gemini's summary and the budget split on the right](docs/screenshot.png)
+
+## What you get
+
+| The challenge asks for | Where it is in the plan |
+|---|---|
+| Budgets | Budget split by category that always adds up to your total, a per-guest figure, a warning when the budget is tight, and Gemini's money-saving tips |
+| Timelines | Tasks counted back from the event date, split into "Do this week" and "Then", with late tasks pulled to today and a faster fallback. Tick them off as you go |
+| Vendor checklists | Vendors that fit the event, each with a book-by date, a reason sized to your guest count and a tip. Tick them off once booked |
+| Personalized ideas | Ideas, extra tasks and a summary written by Gemini from your details and notes |
+| Weddings, birthdays, community events | Each has its own budget split, task list, vendor list and lead times |
 
 ## How it works
 
@@ -35,9 +49,28 @@ Form ──► /api/plan ──► buildBasePlan (rules) ──► Gemini enrich
 
 ## Gen AI used
 
-- **Gemini API** (`@google/genai`), called only from the server. It tries `gemini-flash-latest`, then `gemini-3-flash-preview`, then `gemini-flash-lite-latest` when a model is busy or retired (override with a comma-separated `GEMINI_MODEL`):
+- **Gemini API** (`@google/genai`), called only from the server. It tries `gemini-flash-latest`, then `gemini-3-flash-preview`, then `gemini-flash-lite-latest` when a model is busy or retired, all within one 20 s deadline (override the list with a comma-separated `GEMINI_MODEL`):
   - `/api/plan`: personal ideas, extra tasks, budget tips and a summary, using structured JSON output (`responseJsonSchema`) built from the same Zod schema that validates the reply.
-  - `/api/refine`: turns a plain-language change request into specific field changes, which are re-checked against the form rules before the plan is rebuilt.
+  - `/api/refine`: turns a plain-language change request into specific field changes. Each change is checked against the form rules on its own: valid ones are applied, the rest are named in the reply ("Skipped: date (already in the past)").
+
+Example: what goes in and what comes back from `/api/plan` (trimmed).
+
+```jsonc
+// Request
+{ "today": "2026-10-21",
+  "input": { "eventType": "birthday", "title": "Ananya turns 7", "date": "2026-11-20", "guests": 25,
+             "budget": 40000, "currency": "INR", "setting": "home", "considerations": ["kids"],
+             "notes": "Space theme, she loves rockets and stars" } }
+
+// Response
+{ "daysLeft": 30, "ideasSource": "ai",
+  "summary": "A space-themed home party for 25 guests...",
+  "budget": { "total": 40000, "perGuest": 1600, "lines": [{ "label": "Rentals (chairs, tables, tent)", "amount": 3200, "share": 0.08 }, ...] },
+  "timeline": [{ "title": "Pick the theme and guest list", "dueDate": "2026-10-21", "status": "rushed", "source": "rules" },
+               { "title": "Order glow-in-the-dark star stickers", "source": "ai" }, ...],
+  "vendors": [{ "name": "Baker", "bookBy": "2026-11-06", "late": false, "why": "Cake for 25; about one slice per guest plus a few spare." }, ...],
+  "ideas": [{ "title": "DIY Cardboard Rocket Ship", "costHint": "low", "description": "..." }, ...] }
+```
 
 ## Security
 
@@ -46,18 +79,20 @@ Form ──► /api/plan ──► buildBasePlan (rules) ──► Gemini enrich
 - Model output is parsed and validated with Zod before use; invalid output falls back to the rules plan. Changes suggested by the model go through the same checks as the form.
 - User text is sent as JSON data, and the system prompt tells the model to treat it as facts, not instructions.
 - Per-client rate limiting (20 plans and 10 refinements a minute per instance), plus a strict Content Security Policy, `X-Frame-Options: DENY`, `nosniff` and a tight `Permissions-Policy`.
-- The server checks the device date sent by the browser is within a day of its own, so countdowns cannot be skewed.
+- The server checks the device date sent by the browser is within a day of its own, and both endpoints reject event dates that are past, not real or more than 3 years away.
+- Plans saved in the browser are checked before they are restored, so a corrupted or old save cannot break the page.
 
 ## Efficiency
 
 - The rule-based plan is pure and fast, so it also runs in the browser as a live preview: no network call while typing.
-- One Gemini call per plan, with a 15 s timeout per model. Results are kept in a small in-memory LRU cache, so the same request does not call the model twice.
+- One Gemini call per plan. The model fallback chain shares a single 20 s deadline, and the routes set `maxDuration`, so a slow day cannot stack up timeouts. Results are kept in a small in-memory LRU cache, so the same request does not call the model twice.
 - No UI framework beyond React, no images, CSS-only motion on `transform` and `opacity`, and fonts self-hosted by `next/font`.
 
 ## Accessibility
 
 - Real `<fieldset>`/`<legend>` radio groups and checkboxes; every control has a label.
-- Errors are linked to their fields with `aria-describedby` and `aria-invalid`; pressing "Draft my plan" with an error moves focus to the first bad field.
+- Errors are linked to their fields with `aria-describedby` and `aria-invalid`; pressing "Draft my plan" with an error moves focus to the first bad field, and a new plan moves focus to its title.
+- An axe-core 4.10 scan (WCAG 2.1 A and AA rules) of the live site found 0 violations, before and after an invalid submit.
 - Status updates use `aria-live` regions. Skip link, visible focus rings, 44 px touch targets.
 - Text and control borders meet WCAG AA contrast. Motion is turned off under `prefers-reduced-motion`.
 - A print stylesheet so the plan prints or saves as a clean PDF.
@@ -76,7 +111,7 @@ Without a key the app still works, with starter ideas instead of Gemini ones; on
 
 ```bash
 bun run check   # typecheck + lint + tests
-bun test        # 41 tests: budget, timeline, vendors, dates, refine, AI fallback, API routes, form a11y
+bun test        # 57 tests: budget, timeline, vendors, dates, refine, AI fallback, Gemini model chain, API routes, form and plan sheet
 bun run build
 ```
 

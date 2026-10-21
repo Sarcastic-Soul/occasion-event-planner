@@ -34,6 +34,8 @@ export interface VendorItem {
   name: string;
   why: string;
   bookBy: string;
+  /** The ideal booking date has passed, so book today. */
+  late: boolean;
   tip?: string;
 }
 
@@ -54,4 +56,11 @@ export interface EventPlan {
   budgetTips: string[];
   /** Whether ideas and summary came from Gemini or from the built-in library. */
   ideasSource: "ai" | "rules";
+}
+
+/** The outcome of a plain-language change: the checked input and what to tell the user. */
+export interface RefineResult {
+  input: EventInput;
+  reply: string;
+  changed: boolean;
 }

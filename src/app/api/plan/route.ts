@@ -7,6 +7,9 @@ import { clientKey, jsonError, readJson } from "@/lib/server/http";
 import { LruCache } from "@/lib/server/lru-cache";
 import { RateLimiter } from "@/lib/server/rate-limit";
 
+/** Room for the Gemini deadline plus the rule-based work. */
+export const maxDuration = 30;
+
 const limiter = new RateLimiter(20, 60_000);
 const plans = new LruCache<EventPlan>(200);
 

@@ -171,14 +171,16 @@
   border-bottom: 1px dashed var(--rule);
 }
 
-.tasks label {
+.tasks label,
+.vendorHead label {
   display: flex;
   gap: 10px;
   align-items: flex-start;
   cursor: pointer;
 }
 
-.tasks input {
+.tasks input,
+.vendorHead input {
   flex: none;
   width: 18px;
   height: 18px;
@@ -186,7 +188,8 @@
   accent-color: var(--accent);
 }
 
-.done label > span {
+.done label > span,
+.done label > strong {
   color: var(--muted);
   text-decoration: line-through;
 }

@@ -18,8 +18,12 @@ export async function readJson<T>(request: Request, schema: z.ZodType<T>): Promi
   if (!request.headers.get("content-type")?.includes("application/json")) {
     return { ok: false, response: jsonError(415, "Expected application/json") };
   }
+  // Refuse early when the declared size is too big, then measure the real bytes.
+  if (Number(request.headers.get("content-length") ?? 0) > MAX_BODY_BYTES) {
+    return { ok: false, response: jsonError(413, "Request too large") };
+  }
   const raw = await request.text();
-  if (raw.length > MAX_BODY_BYTES) {
+  if (new TextEncoder().encode(raw).length > MAX_BODY_BYTES) {
     return { ok: false, response: jsonError(413, "Request too large") };
   }
   let body: unknown;

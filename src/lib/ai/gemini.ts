@@ -4,19 +4,22 @@ import { AiUnavailableError, type JsonGenerator } from "./generator";
 
 /** Tried in order; the next model is used when one is busy or retired. */
 const DEFAULT_MODELS = ["gemini-flash-latest", "gemini-3-flash-preview", "gemini-flash-lite-latest"];
-const TIMEOUT_MS = 15_000;
+/** One deadline shared by every model in the chain, so a slow day cannot stack up timeouts. */
+const DEADLINE_MS = 20_000;
 /** Overloaded, rate limited or no longer offered: worth trying another model. */
 const RETRYABLE_STATUS = new Set([404, 429, 500, 503]);
 
-class GeminiGenerator implements JsonGenerator {
+export class GeminiGenerator implements JsonGenerator {
   constructor(
     private readonly client: GoogleGenAI,
     private readonly models: string[],
   ) {}
 
   async generate({ system, prompt, schema }: { system: string; prompt: string; schema: object }): Promise<string> {
-    let lastError: unknown;
+    const deadline = AbortSignal.timeout(DEADLINE_MS);
+    let lastError: unknown = new AiUnavailableError("No model answered in time");
     for (const model of this.models) {
+      if (deadline.aborted) break;
       try {
         const response = await this.client.models.generateContent({
           model,
@@ -26,7 +29,7 @@ class GeminiGenerator implements JsonGenerator {
             responseMimeType: "application/json",
             responseJsonSchema: schema,
             temperature: 0.7,
-            abortSignal: AbortSignal.timeout(TIMEOUT_MS),
+            abortSignal: deadline,
           },
         });
         if (response.text) return response.text;

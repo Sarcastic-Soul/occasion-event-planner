@@ -38,6 +38,11 @@ export type Setting = EventInput["setting"];
 export type Currency = EventInput["currency"];
 export type Consideration = (typeof CONSIDERATIONS)[number];
 
+/** Wheelchair users and older guests both need step-free access, seating and transport. */
+export function needsAccess(input: Pick<EventInput, "considerations">): boolean {
+  return input.considerations.includes("accessibility") || input.considerations.includes("elderly");
+}
+
 export const planRequestSchema = z.object({
   input: eventInputSchema,
   /** The user's local calendar date, so countdowns match their timezone. */

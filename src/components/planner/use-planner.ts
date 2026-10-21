@@ -6,6 +6,7 @@ import { defaultDraft, draftFromInput, validateDraft, type Draft, type DraftErro
 import { localToday } from "@/lib/client/format";
 import { loadJson, saveJson } from "@/lib/client/storage";
 import { buildBasePlan } from "@/lib/plan/build-plan";
+import { eventInputSchema } from "@/lib/plan/schema";
 import type { EventPlan } from "@/lib/plan/types";
 
 const PLAN_KEY = "occasion:plan";
@@ -16,6 +17,15 @@ const noopSubscribe = () => () => {};
 /** Today's date on the user's device; null during server rendering. */
 function useToday(): string | null {
   return useSyncExternalStore(noopSubscribe, localToday, () => null);
+}
+
+/** A saved plan can be from an older version or edited by hand, so check its shape before trusting it. */
+function restorePlan(saved: unknown, today: string): EventPlan | null {
+  if (!saved || typeof saved !== "object") return null;
+  const plan = saved as Partial<EventPlan>;
+  const input = eventInputSchema.safeParse(plan.input);
+  const complete = [plan.timeline, plan.vendors, plan.ideas, plan.budget?.lines].every(Array.isArray);
+  return input.success && complete && input.data.date >= today ? { ...(plan as EventPlan), input: input.data } : null;
 }
 
 export type Status = "idle" | "loading" | "error";
@@ -33,8 +43,7 @@ export function usePlanner() {
   // Restore the last plan once the device date is known.
   useEffect(() => {
     if (!today || draft) return;
-    const saved = loadJson<EventPlan>(PLAN_KEY);
-    const restored = saved && saved.input.date >= today ? saved : null;
+    const restored = restorePlan(loadJson<unknown>(PLAN_KEY), today);
     /* eslint-disable react-hooks/set-state-in-effect -- one-time hydration from localStorage */
     setPlan(restored);
     setDraft(restored ? draftFromInput(restored.input) : defaultDraft(today));
@@ -66,8 +75,11 @@ export function usePlanner() {
     setServerErrors({});
   }, []);
 
-  /** Returns the first field with a problem, so the form can move focus there. */
-  const submit = useCallback(async (): Promise<keyof Draft | null> => {
+  /**
+   * Returns where focus should go next: the first field with a problem,
+   * "plan" once a new plan is in, or null when nothing changed.
+   */
+  const submit = useCallback(async (): Promise<keyof Draft | "plan" | null> => {
     if (!checked || !today) return null;
     if (!checked.ok) return Object.keys(checked.errors)[0] as keyof Draft;
     inFlight.current?.abort();
@@ -84,6 +96,7 @@ export function usePlanner() {
           ? "Plan drafted with personal ideas."
           : "Plan drafted. AI ideas are unavailable right now, so these are starter ideas.",
       );
+      return "plan";
     } catch (error) {
       if ((error as Error).name === "AbortError") return null;
       setStatus("error");

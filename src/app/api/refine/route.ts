@@ -1,9 +1,12 @@
 import { getGemini } from "@/lib/ai/gemini";
 import { createPlan, refineInput } from "@/lib/ai/planner";
 import { refineRequestSchema } from "@/lib/plan/schema";
-import { checkClientToday } from "@/lib/plan/validation";
+import { checkClientToday, checkEventDate } from "@/lib/plan/validation";
 import { clientKey, jsonError, readJson } from "@/lib/server/http";
 import { RateLimiter } from "@/lib/server/rate-limit";
+
+/** Two model calls in a row (read the change, then redraft), each capped by the Gemini deadline. */
+export const maxDuration = 60;
 
 const limiter = new RateLimiter(10, 60_000);
 
@@ -19,6 +22,10 @@ export async function POST(request: Request): Promise<Response> {
   if (!parsed.ok) return parsed.response;
   const { input, today, message } = parsed.data;
   if (!checkClientToday(today)) return jsonError(400, "Your device date looks wrong.");
+  const dateProblem = checkEventDate(input.date, today);
+  if (dateProblem) {
+    return jsonError(400, `Event date is ${dateProblem}.`, { fields: [{ path: "input.date", message: dateProblem }] });
+  }
 
   try {
     const result = await refineInput(input, today, message, ai);

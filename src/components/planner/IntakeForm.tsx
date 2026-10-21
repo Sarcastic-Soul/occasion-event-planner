@@ -77,6 +77,7 @@ export function IntakeForm({ draft, errors, busy, onChange, onSubmit, onEventTyp
           maxLength={80}
           placeholder={TITLE_PLACEHOLDERS[draft.eventType]}
           onChange={(e) => onChange({ title: e.target.value })}
+          aria-invalid={Boolean(errors.title)}
           aria-describedby={describedBy("title")}
         />
         {fieldError("title")}
@@ -193,6 +194,7 @@ export function IntakeForm({ draft, errors, busy, onChange, onSubmit, onEventTyp
           value={draft.notes}
           placeholder="Space theme, vegetarian menu, grandmother flying in from Pune..."
           onChange={(e) => onChange({ notes: e.target.value })}
+          aria-invalid={Boolean(errors.notes)}
           aria-describedby={describedBy("notes")}
         />
         {fieldError("notes")}
