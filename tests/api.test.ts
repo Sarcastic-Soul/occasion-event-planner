@@ -5,8 +5,11 @@ import { addDays } from "@/lib/plan/dates";
 import { makeInput } from "./fixtures";
 
 // Route handlers never touch the network: Gemini is off, or replaced by a scripted fake.
+// Only getGemini is swapped; the rest of the module stays real so other test files are unaffected.
 let fakeAi: JsonGenerator | null = null;
-mock.module("@/lib/ai/gemini", () => ({ getGemini: () => fakeAi }));
+mock.module("server-only", () => ({}));
+const gemini = await import("@/lib/ai/gemini");
+mock.module("@/lib/ai/gemini", () => ({ ...gemini, getGemini: () => fakeAi }));
 afterEach(() => {
   fakeAi = null;
 });
