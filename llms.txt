@@ -1,0 +1,25 @@
+# Occasion
+
+> GenAI planning assistant for weddings, birthdays and community events, built for Prompt Wars (Hack2Skill x Google), Challenge 5: Celebration & Event Planner. Rules compute the budget, timeline and vendor checklist so money and dates are always right; Gemini adds personal ideas, extra tasks, money-saving tips and a summary, and turns plain-language change requests into checked field changes.
+
+- Live app: https://occasion-event-planner.vercel.app
+- Demo video: https://drive.google.com/file/d/1FETHGWW5HfSp-t5cJyqmHsXEoG-USNoV/view?usp=sharing
+- Stack: Next.js 16 (App Router), React 19, Bun, TypeScript, Zod 4, Gemini API (@google/genai), Vercel
+
+## Docs
+
+- [README](README.md): overview, features mapped to the challenge, how to run
+- [Architecture](docs/ARCHITECTURE.md): rules vs Gemini split, request flow, modules, personalization rules
+- [API](docs/API.md): POST /api/plan and POST /api/refine, schemas, errors
+- [Security](docs/SECURITY.md): risks, controls, files and tests
+- [Testing](docs/TESTING.md): 57 tests and what each file covers
+- [Accessibility](docs/ACCESSIBILITY.md): WCAG 2.1 AA measures, axe-core result
+
+## Key source files
+
+- [src/lib/plan/](src/lib/plan/): pure planning rules (schema, budget, timeline, vendors, dates, refine, validation)
+- [src/lib/ai/planner.ts](src/lib/ai/planner.ts): createPlan and refineInput, rules first then Gemini
+- [src/lib/ai/gemini.ts](src/lib/ai/gemini.ts): Gemini client with model fallback and shared deadline
+- [src/app/api/plan/route.ts](src/app/api/plan/route.ts), [src/app/api/refine/route.ts](src/app/api/refine/route.ts): route handlers
+- [src/components/planner/](src/components/planner/): form, plan sheet, refine box, usePlanner hook
+- [tests/](tests/): bun test suites

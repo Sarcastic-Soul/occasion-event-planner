@@ -18,6 +18,18 @@ A planning assistant for weddings, birthdays and community events. Tell it the o
 | Personalized ideas | Ideas, extra tasks and a summary written by Gemini from your details and notes |
 | Weddings, birthdays, community events | Each has its own budget split, task list, vendor list and lead times |
 
+## For reviewers
+
+| Criterion | Where to look |
+|---|---|
+| Problem alignment | "What you get" above, the personalization table below, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Code quality | Pure rules in `src/lib/plan/`, AI behind the `JsonGenerator` interface in `src/lib/ai/`, thin route handlers in `src/app/api/`; strict TypeScript, ESLint, one Zod schema per contract. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Security | [docs/SECURITY.md](docs/SECURITY.md): each risk with its control, file and test |
+| Efficiency | Rules run in the browser for a free live preview; one Gemini call per plan, LRU cache, one shared 20 s model deadline ("Efficiency" below) |
+| Testing | [docs/TESTING.md](docs/TESTING.md): 57 tests across 10 files, `bun run check` |
+| Accessibility | [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md): WCAG 2.1 AA target, axe-core found 0 violations |
+| API | [docs/API.md](docs/API.md): request and response shapes, every error status |
+
 ## How it works
 
 The app splits the work in two:
@@ -134,6 +146,7 @@ src/
     server/                Rate limiter, LRU cache, JSON body reader
     client/                Form draft parsing, API calls, formatting, localStorage
 tests/                     bun test suites
+docs/                      Architecture, API, security, testing, accessibility notes
 ```
 
 ## Assumptions
