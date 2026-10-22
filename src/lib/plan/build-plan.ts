@@ -29,21 +29,26 @@ export function buildBasePlan(input: EventInput, today: string): EventPlan {
  * Ids for Gemini's tasks come from their titles, so a tick stays on the same task
  * after a redraft instead of sliding onto whatever lands in the same position.
  */
-function aiTaskIds(titles: string[]): string[] {
+function aiTaskIdMaker(): (title: string) => string {
   const seen = new Map<string, number>();
-  return titles.map((title) => {
-    const slug = title.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 48) || "task";
+  return (title) => {
+    const slug =
+      title
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, "-")
+        .replace(/^-|-$/g, "")
+        .slice(0, 48) || "task";
     const count = (seen.get(slug) ?? 0) + 1;
     seen.set(slug, count);
     return `ai-${slug}${count > 1 ? `-${count}` : ""}`;
-  });
+  };
 }
 
 /** Layers Gemini's personal touches on top of the rule-based plan without touching the numbers. */
 export function mergeEnrichment(plan: EventPlan, ai: AiEnrichment, today: string): EventPlan {
-  const ids = aiTaskIds(ai.extraTasks.map((t) => t.title));
-  const extra = ai.extraTasks.map((t, i) =>
-    scheduleTask({ id: ids[i], title: t.title, weeksBefore: t.weeksBefore, source: "ai" }, plan.input.date, today),
+  const taskId = aiTaskIdMaker();
+  const extra = ai.extraTasks.map(({ title, weeksBefore }) =>
+    scheduleTask({ id: taskId(title), title, weeksBefore, source: "ai" }, plan.input.date, today),
   );
   return {
     ...plan,

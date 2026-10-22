@@ -52,7 +52,9 @@ let cached: JsonGenerator | null | undefined;
 export function getGemini(): JsonGenerator | null {
   if (cached !== undefined) return cached;
   const apiKey = process.env.GEMINI_API_KEY;
-  const configured = process.env.GEMINI_MODEL?.split(",").map((m) => m.trim()).filter(Boolean);
+  const configured = process.env.GEMINI_MODEL?.split(",")
+    .map((m) => m.trim())
+    .filter(Boolean);
   cached = apiKey
     ? new GeminiGenerator(new GoogleGenAI({ apiKey }), configured?.length ? configured : DEFAULT_MODELS)
     : null;

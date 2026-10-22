@@ -23,10 +23,10 @@ A planning assistant for weddings, birthdays and community events. Tell it the o
 | Criterion | Where to look |
 |---|---|
 | Problem alignment | "What you get" above, the personalization table below, [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
-| Code quality | Pure rules in `src/lib/plan/`, AI behind the `JsonGenerator` interface in `src/lib/ai/`, thin route handlers in `src/app/api/`; strict TypeScript, ESLint, one Zod schema per contract. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
+| Code quality | Pure rules in `src/lib/plan/`, AI behind the `JsonGenerator` interface in `src/lib/ai/`, thin route handlers in `src/app/api/`; strict TypeScript (`noUncheckedIndexedAccess`), ESLint, Prettier and GitHub Actions CI, one Zod schema per contract, labels and limits defined once in `src/lib/plan/`. See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) |
 | Security | [docs/SECURITY.md](docs/SECURITY.md): each risk with its control, file and test |
 | Efficiency | Rules run in the browser for a free live preview; one Gemini call per plan, LRU cache, one shared 20 s model deadline ("Efficiency" below) |
-| Testing | [docs/TESTING.md](docs/TESTING.md): 57 tests across 10 files, `bun run check` |
+| Testing | [docs/TESTING.md](docs/TESTING.md): 65 tests across 12 files, `bun run check` |
 | Accessibility | [docs/ACCESSIBILITY.md](docs/ACCESSIBILITY.md): WCAG 2.1 AA target, axe-core found 0 violations |
 | API | [docs/API.md](docs/API.md): request and response shapes, every error status |
 
@@ -122,8 +122,8 @@ bun run dev               # http://localhost:3000
 Without a key the app still works, with starter ideas instead of Gemini ones; only "change in plain words" needs the key.
 
 ```bash
-bun run check   # typecheck + lint + tests
-bun test        # 57 tests: budget, timeline, vendors, dates, refine, AI fallback, Gemini model chain, API routes, form and plan sheet
+bun run check   # typecheck + lint + format check + tests (also runs in CI)
+bun test        # 65 tests: budget, timeline, vendors, dates, refine, AI fallback, Gemini model chain, request checks, API routes, form and plan sheet
 bun run build
 ```
 
@@ -136,15 +136,15 @@ Import the repo in Vercel (it detects Next.js and Bun), then add `GEMINI_API_KEY
 ```
 src/
   app/
-    api/plan/route.ts      POST: validate, build plan, enrich with Gemini
+    api/plan/route.ts      POST: shared request checks, build plan, enrich with Gemini
     api/refine/route.ts    POST: plain-language change to the plan
     layout.tsx, page.tsx
-  components/planner/      Planner, IntakeForm, PlanSheet, RefineBox, use-planner hook
+  components/planner/      Planner, IntakeForm, PlanSheet (Budget, Timeline, Vendor, Ideas sections), RefineBox, use-planner hook
   lib/
-    plan/                  Pure planning rules: schema, budget, timeline, vendors, refine, validation
+    plan/                  Pure planning rules: schema and limits, labels, budget, timeline, vendors, refine, validation
     ai/                    JsonGenerator interface, Gemini client, prompts, planner (rules + AI)
-    server/                Rate limiter, LRU cache, JSON body reader
-    client/                Form draft parsing, API calls, formatting, localStorage
+    server/                Rate limiter, LRU cache, JSON body reader, shared plan request checks
+    client/                Form draft parsing, API calls, error helpers, formatting, localStorage
 tests/                     bun test suites
 docs/                      Architecture, API, security, testing, accessibility notes
 ```

@@ -2,11 +2,17 @@
 
 import { useState, type FormEvent } from "react";
 import { ChatTextIcon } from "@phosphor-icons/react";
+import { errorMessage } from "@/lib/client/errors";
+import { LIMITS } from "@/lib/plan/schema";
 import styles from "./PlanSheet.module.css";
 
 const EXAMPLES = ["Cut the budget by 20%", "Make it 40 guests", "Move it outdoors"];
 
-export function RefineBox({ onRefine }: { onRefine: (request: string) => Promise<string> }) {
+interface Props {
+  onRefine: (request: string) => Promise<string>;
+}
+
+export function RefineBox({ onRefine }: Props) {
   const [text, setText] = useState("");
   const [reply, setReply] = useState("");
   const [busy, setBusy] = useState(false);
@@ -14,13 +20,14 @@ export function RefineBox({ onRefine }: { onRefine: (request: string) => Promise
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const request = text.trim();
-    if (request.length < 3 || busy) return;
+    // Same minimum as the server, so a stray keypress does not cost a model call.
+    if (request.length < LIMITS.refineMinLength || busy) return;
     setBusy(true);
     try {
       setReply(await onRefine(request));
       setText("");
     } catch (error) {
-      setReply((error as Error).message);
+      setReply(errorMessage(error));
     } finally {
       setBusy(false);
     }
@@ -36,7 +43,7 @@ export function RefineBox({ onRefine }: { onRefine: (request: string) => Promise
           id="refine"
           className={styles.refineInput}
           value={text}
-          maxLength={300}
+          maxLength={LIMITS.refineLength}
           list="refine-examples"
           placeholder={EXAMPLES[0]}
           onChange={(e) => setText(e.target.value)}

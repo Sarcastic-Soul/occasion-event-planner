@@ -42,17 +42,18 @@ RefineBox: POST /api/refine { input, today, message }
 
 | Folder | Responsibility | Depends on |
 |---|---|---|
-| `src/lib/plan/` | Pure planning rules: Zod schemas, budget, timeline, vendors, dates, validation, refine checks, fallback ideas. No I/O, runs in browser and server. | `zod` only |
+| `src/lib/plan/` | Pure planning rules: Zod schemas and shared `LIMITS`, display labels, budget, timeline, vendors, dates, validation, refine checks, fallback ideas. No I/O, runs in browser and server. | `zod` only |
 | `src/lib/ai/` | `JsonGenerator` interface, Gemini client with model fallback, prompts, `createPlan` / `refineInput` | `plan/`, `@google/genai` |
-| `src/lib/server/` | `RateLimiter`, `LruCache`, `readJson` / `jsonError` helpers | `zod` types |
-| `src/lib/client/` | Form draft parsing, fetch wrappers with timeouts, formatting, localStorage | `plan/` |
-| `src/components/planner/` | `Planner` (layout), `IntakeForm`, `PlanSheet`, `RefineBox`, `usePlanner` hook (all state) | `lib/client`, `lib/plan` |
-| `src/app/api/` | Two POST route handlers, thin: validate, call `lib/ai`, return JSON | everything above |
+| `src/lib/server/` | `RateLimiter`, `LruCache`, `readJson` / `jsonError` helpers, `readPlanRequest` (rate limit, body, device date and event date checks shared by both routes) | `zod` types |
+| `src/lib/client/` | Form draft parsing, fetch wrappers with timeouts, error helpers, formatting, localStorage | `plan/` |
+| `src/components/planner/` | `Planner` (layout), `IntakeForm`, `PlanSheet` built from `BudgetSection`, `TimelineSection`, `VendorSection` and `IdeasSection`, `RefineBox`, `usePlanner` hook (all state) | `lib/client`, `lib/plan` |
+| `src/app/api/` | Two POST route handlers, thin: `readPlanRequest`, call `lib/ai`, return JSON | everything above |
 
 Key design choices:
 
 - **`JsonGenerator` interface** (`src/lib/ai/generator.ts`). Planning code depends on "something that returns JSON for a schema", not on Gemini. Tests pass a fake; production passes `GeminiGenerator`.
 - **One schema, three uses.** `aiEnrichmentSchema` (Zod) is turned into the JSON Schema sent to Gemini as `responseJsonSchema`, used to validate the reply, and gives the TypeScript type.
+- **One source for limits and labels.** `LIMITS` in `schema.ts` sets the Zod rules, the form's `maxLength` and the error messages (through `LIMIT_RULES` in `labels.ts`), so they cannot drift apart.
 - **`server-only` guard** on `src/lib/ai/gemini.ts`, so the Gemini client and key can never be bundled into browser code.
 - **Pure functions take `today` as an argument**, so every date rule is deterministic and testable without mocking the clock.
 

@@ -72,7 +72,9 @@ describe("POST /api/refine", () => {
 
   test("rejects a plan whose event date is already past", async () => {
     fakeAi = scripted({ reply: "Ok", changes: noChanges });
-    const res = await refinePOST(post({ input: makeInput({ date: addDays(today, -3) }), today, message: "fewer guests" }, "2.2.2.2"));
+    const res = await refinePOST(
+      post({ input: makeInput({ date: addDays(today, -3) }), today, message: "fewer guests" }, "2.2.2.2"),
+    );
     expect(res.status).toBe(400);
     expect((await res.json()).fields[0].path).toBe("input.date");
   });
@@ -91,14 +93,18 @@ describe("POST /api/refine", () => {
 
   test("returns no plan when the request changes nothing", async () => {
     fakeAi = scripted({ reply: "That is already the plan.", changes: noChanges });
-    const res = await refinePOST(post({ input: makeInput({ date: addDays(today, 120) }), today, message: "keep it" }, "4.4.4.4"));
+    const res = await refinePOST(
+      post({ input: makeInput({ date: addDays(today, 120) }), today, message: "keep it" }, "4.4.4.4"),
+    );
     expect(res.status).toBe(200);
     expect((await res.json()).plan).toBeNull();
   });
 
   test("answers 502 when the model reply is not valid", async () => {
     fakeAi = { generate: async () => "not json" };
-    const res = await refinePOST(post({ input: makeInput({ date: addDays(today, 120) }), today, message: "make it bigger" }, "5.5.5.5"));
+    const res = await refinePOST(
+      post({ input: makeInput({ date: addDays(today, 120) }), today, message: "make it bigger" }, "5.5.5.5"),
+    );
     expect(res.status).toBe(502);
   });
 });

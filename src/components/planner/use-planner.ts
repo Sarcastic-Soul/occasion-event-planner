@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState, useSyncExternalStore } from "react";
 import { ApiError, requestPlan, requestRefine } from "@/lib/client/api";
 import { defaultDraft, draftFromInput, validateDraft, type Draft, type DraftErrors } from "@/lib/client/draft";
+import { errorMessage, isAbortError } from "@/lib/client/errors";
 import { localToday } from "@/lib/client/format";
 import { loadJson, saveJson } from "@/lib/client/storage";
 import { buildBasePlan } from "@/lib/plan/build-plan";
@@ -29,6 +30,18 @@ function restorePlan(saved: unknown, today: string): EventPlan | null {
 }
 
 export type Status = "idle" | "loading" | "error";
+
+/** Where focus should go after a submit: the first field with a problem, or the new plan. */
+export type FocusTarget = keyof Draft | "plan";
+
+function firstField(errors: DraftErrors): keyof Draft | null {
+  return (Object.keys(errors) as (keyof Draft)[])[0] ?? null;
+}
+
+/** Server field paths look like "input.guests"; the form only needs the last part. */
+function toDraftErrors(fields: ApiError["fields"]): DraftErrors {
+  return Object.fromEntries(fields.map((f) => [f.path.split(".").pop(), f.message]));
+}
 
 export function usePlanner() {
   const today = useToday();
@@ -75,13 +88,10 @@ export function usePlanner() {
     setServerErrors({});
   }, []);
 
-  /**
-   * Returns where focus should go next: the first field with a problem,
-   * "plan" once a new plan is in, or null when nothing changed.
-   */
-  const submit = useCallback(async (): Promise<keyof Draft | "plan" | null> => {
+  /** Drafts a plan from the form. Returns where focus should go next, or null when nothing changed. */
+  const submit = useCallback(async (): Promise<FocusTarget | null> => {
     if (!checked || !today) return null;
-    if (!checked.ok) return Object.keys(checked.errors)[0] as keyof Draft;
+    if (!checked.ok) return firstField(checked.errors);
     inFlight.current?.abort();
     const controller = new AbortController();
     inFlight.current = controller;
@@ -98,13 +108,13 @@ export function usePlanner() {
       );
       return "plan";
     } catch (error) {
-      if ((error as Error).name === "AbortError") return null;
+      if (isAbortError(error)) return null;
       setStatus("error");
-      setMessage((error as Error).message);
+      setMessage(errorMessage(error));
       if (error instanceof ApiError && error.fields.length > 0) {
-        const fields = Object.fromEntries(error.fields.map((f) => [f.path.split(".").pop(), f.message]));
+        const fields = toDraftErrors(error.fields);
         setServerErrors(fields);
-        return Object.keys(fields)[0] as keyof Draft;
+        return firstField(fields);
       }
     }
     return null;

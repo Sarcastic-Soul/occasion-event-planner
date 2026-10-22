@@ -71,6 +71,6 @@ describe("mergeEnrichment", () => {
         .map((t) => t.id)
         .sort();
     expect(ids(tasks)).toEqual(["ai-book-mehendi-artist", "ai-book-mehendi-artist-2"]);
-    expect(ids([tasks[0]])).toEqual(["ai-book-mehendi-artist"]);
+    expect(ids(tasks.slice(0, 1))).toEqual(["ai-book-mehendi-artist"]);
   });
 });

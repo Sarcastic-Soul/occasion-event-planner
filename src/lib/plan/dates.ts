@@ -2,7 +2,7 @@ const DAY_MS = 86_400_000;
 
 /** Parses YYYY-MM-DD as a UTC calendar day so math never shifts with the server timezone. */
 export function parseDay(iso: string): number {
-  const [y, m, d] = iso.split("-").map(Number);
+  const [y = Number.NaN, m = Number.NaN, d = Number.NaN] = iso.split("-").map(Number);
   return Date.UTC(y, m - 1, d);
 }
 

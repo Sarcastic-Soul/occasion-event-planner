@@ -1,4 +1,4 @@
-import type { Currency, EventInput } from "./schema";
+import type { CostHint, Currency, EventInput } from "./schema";
 
 export interface BudgetLine {
   id: string;
@@ -42,7 +42,7 @@ export interface VendorItem {
 export interface Idea {
   title: string;
   description: string;
-  costHint: "low" | "medium" | "high";
+  costHint: CostHint;
 }
 
 export interface EventPlan {

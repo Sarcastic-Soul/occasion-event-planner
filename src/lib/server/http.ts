@@ -1,9 +1,13 @@
 import type { z } from "zod";
 
+/** Plan requests are a few hundred bytes; anything far bigger is refused before parsing. */
 const MAX_BODY_BYTES = 8 * 1024;
 
+/** Plans hold personal details, so no response is stored by browsers or proxies. */
+export const NO_STORE = { "Cache-Control": "no-store" } as const;
+
 export function jsonError(status: number, message: string, extra?: Record<string, unknown>): Response {
-  return Response.json({ error: message, ...extra }, { status, headers: { "Cache-Control": "no-store" } });
+  return Response.json({ error: message, ...extra }, { status, headers: NO_STORE });
 }
 
 /** Best-effort client id for rate limiting; Vercel sets x-forwarded-for. */
@@ -11,7 +15,7 @@ export function clientKey(request: Request): string {
   return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "anonymous";
 }
 
-type Parsed<T> = { ok: true; data: T } | { ok: false; response: Response };
+export type Parsed<T> = { ok: true; data: T } | { ok: false; response: Response };
 
 /** Reads a small JSON body and validates it, returning a ready 4xx response on failure. */
 export async function readJson<T>(request: Request, schema: z.ZodType<T>): Promise<Parsed<T>> {

@@ -1,5 +1,13 @@
 import { addDays } from "../plan/dates";
-import { eventInputSchema, type Consideration, type Currency, type EventInput, type EventType, type Setting } from "../plan/schema";
+import {
+  eventInputSchema,
+  type Consideration,
+  type Currency,
+  type EventInput,
+  type EventType,
+  type Setting,
+} from "../plan/schema";
+import { LIMIT_RULES } from "../plan/labels";
 import { checkEventDate } from "../plan/validation";
 
 /** Form state. Number fields stay as text so a half-typed value is not lost. */
@@ -48,10 +56,10 @@ function toWholeNumber(text: string): number {
 }
 
 const MESSAGES: Partial<Record<keyof Draft, string>> = {
-  guests: "Enter a guest count between 1 and 5,000.",
-  budget: "Enter a budget as a whole number above 0.",
-  title: "Keep the name under 80 characters.",
-  notes: "Keep notes under 500 characters.",
+  guests: `Enter a guest count ${LIMIT_RULES.guests}.`,
+  budget: `Enter a budget as ${LIMIT_RULES.budget}.`,
+  title: `Keep the name ${LIMIT_RULES.title}.`,
+  notes: `Keep notes ${LIMIT_RULES.notes}.`,
 };
 
 export function validateDraft(

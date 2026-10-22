@@ -1,5 +1,6 @@
 import type { EventInput } from "../plan/schema";
 import type { EventPlan } from "../plan/types";
+import { isAbortError } from "./errors";
 
 export interface FieldError {
   path: string;
@@ -26,12 +27,17 @@ async function post<T>(url: string, body: unknown, signal?: AbortSignal): Promis
       signal,
     });
   } catch (error) {
-    if ((error as Error).name === "AbortError") throw error;
+    if (isAbortError(error)) throw error;
     throw new ApiError("Could not reach the server. Check your connection and try again.");
   }
-  const data = await response.json().catch(() => ({}));
+  const data: { error?: string; fields?: FieldError[] } = await response.json().catch(() => ({}));
   if (!response.ok) throw new ApiError(data.error ?? "Something went wrong.", data.fields ?? []);
   return data as T;
+}
+
+export interface RefineResponse {
+  reply: string;
+  plan: EventPlan | null;
 }
 
 export function requestPlan(input: EventInput, today: string, signal?: AbortSignal) {
@@ -43,5 +49,5 @@ const REFINE_TIMEOUT_MS = 60_000;
 
 export function requestRefine(input: EventInput, today: string, message: string) {
   const body = { input, today, message };
-  return post<{ reply: string; plan: EventPlan | null }>("/api/refine", body, AbortSignal.timeout(REFINE_TIMEOUT_MS));
+  return post<RefineResponse>("/api/refine", body, AbortSignal.timeout(REFINE_TIMEOUT_MS));
 }

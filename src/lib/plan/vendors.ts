@@ -41,7 +41,8 @@ const VENDORS: VendorTemplate[] = [
     id: "photographer",
     name: "Photographer",
     weeksBefore: { wedding: 20, birthday: 3 },
-    why: (i) => (i.eventType === "wedding" ? "Covers every ceremony; most book months ahead." : "A 2-hour slot is usually enough."),
+    why: (i) =>
+      i.eventType === "wedding" ? "Covers every ceremony; most book months ahead." : "A 2-hour slot is usually enough.",
     tip: "Ask for one full gallery, not just highlights.",
   },
   {
@@ -79,7 +80,8 @@ const VENDORS: VendorTemplate[] = [
     id: "sound",
     name: "Sound & stage",
     weeksBefore: { community: 6 },
-    why: (i) => (i.guests > 200 ? "A crowd this size needs a proper PA, not a speaker." : "A small PA and one mic is enough."),
+    why: (i) =>
+      i.guests > 200 ? "A crowd this size needs a proper PA, not a speaker." : "A small PA and one mic is enough.",
   },
   {
     id: "firstaid",

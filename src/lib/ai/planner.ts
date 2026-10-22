@@ -20,11 +20,7 @@ const refineJsonSchema = toModelSchema(aiRefinementSchema);
  * Builds the rule-based plan, then asks the model for personal touches.
  * If the model is missing, slow or returns bad JSON, the rule-based plan is still returned.
  */
-export async function createPlan(
-  input: EventInput,
-  today: string,
-  ai: JsonGenerator | null,
-): Promise<EventPlan> {
+export async function createPlan(input: EventInput, today: string, ai: JsonGenerator | null): Promise<EventPlan> {
   const base = buildBasePlan(input, today);
   if (!ai) return base;
   try {

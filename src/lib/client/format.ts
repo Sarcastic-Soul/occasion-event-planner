@@ -14,7 +14,12 @@ export function formatMoney(amount: number, currency: Currency): string {
   return format.format(amount);
 }
 
-const dayFormat = new Intl.DateTimeFormat("en-GB", { day: "numeric", month: "short", year: "numeric", timeZone: "UTC" });
+const dayFormat = new Intl.DateTimeFormat("en-GB", {
+  day: "numeric",
+  month: "short",
+  year: "numeric",
+  timeZone: "UTC",
+});
 
 export function formatDate(iso: string): string {
   return dayFormat.format(parseDay(iso));

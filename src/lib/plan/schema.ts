@@ -3,13 +3,18 @@ import { z } from "zod";
 export const EVENT_TYPES = ["wedding", "birthday", "community"] as const;
 export const SETTINGS = ["indoor", "outdoor", "home"] as const;
 export const CURRENCIES = ["INR", "USD", "EUR", "GBP"] as const;
-export const CONSIDERATIONS = [
-  "accessibility",
-  "dietary",
-  "kids",
-  "elderly",
-  "eco",
-] as const;
+export const CONSIDERATIONS = ["accessibility", "dietary", "kids", "elderly", "eco"] as const;
+export const COST_HINTS = ["low", "medium", "high"] as const;
+
+/** Input limits shared by the schema, the form and the messages that explain them. */
+export const LIMITS = {
+  titleLength: 80,
+  notesLength: 500,
+  refineLength: 300,
+  refineMinLength: 3,
+  maxGuests: 5000,
+  maxBudget: 1_000_000_000,
+} as const;
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "Use YYYY-MM-DD");
 
@@ -22,14 +27,14 @@ const plainText = (max: number) =>
 
 export const eventInputSchema = z.object({
   eventType: z.enum(EVENT_TYPES),
-  title: plainText(80).default(""),
+  title: plainText(LIMITS.titleLength).default(""),
   date: isoDate,
-  guests: z.number().int().min(1).max(5000),
-  budget: z.number().int().min(1).max(1_000_000_000),
+  guests: z.number().int().min(1).max(LIMITS.maxGuests),
+  budget: z.number().int().min(1).max(LIMITS.maxBudget),
   currency: z.enum(CURRENCIES).default("INR"),
   setting: z.enum(SETTINGS),
   considerations: z.array(z.enum(CONSIDERATIONS)).max(CONSIDERATIONS.length).default([]),
-  notes: plainText(500).default(""),
+  notes: plainText(LIMITS.notesLength).default(""),
 });
 
 export type EventInput = z.infer<typeof eventInputSchema>;
@@ -37,6 +42,7 @@ export type EventType = EventInput["eventType"];
 export type Setting = EventInput["setting"];
 export type Currency = EventInput["currency"];
 export type Consideration = (typeof CONSIDERATIONS)[number];
+export type CostHint = (typeof COST_HINTS)[number];
 
 /** Wheelchair users and older guests both need step-free access, seating and transport. */
 export function needsAccess(input: Pick<EventInput, "considerations">): boolean {
@@ -52,7 +58,7 @@ export const planRequestSchema = z.object({
 export const refineRequestSchema = z.object({
   input: eventInputSchema,
   today: isoDate,
-  message: plainText(300).pipe(z.string().min(3, "Tell us what to change")),
+  message: plainText(LIMITS.refineLength).pipe(z.string().min(LIMITS.refineMinLength, "Tell us what to change")),
 });
 
 /** What Gemini may return when enriching a plan. Validated before use. */
@@ -63,7 +69,7 @@ export const aiEnrichmentSchema = z.object({
       z.object({
         title: z.string().max(80),
         description: z.string().max(300),
-        costHint: z.enum(["low", "medium", "high"]),
+        costHint: z.enum(COST_HINTS),
       }),
     )
     .min(1)

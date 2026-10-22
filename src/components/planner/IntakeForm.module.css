@@ -110,7 +110,9 @@ textarea.input {
   font-weight: 500;
   font-size: 15px;
   text-align: center;
-  transition: background-color 150ms ease-out, color 150ms ease-out;
+  transition:
+    background-color 150ms ease-out,
+    color 150ms ease-out;
 }
 
 .segment input:checked + span {
@@ -175,7 +177,9 @@ textarea.input {
   font-weight: 700;
   font-size: 16px;
   cursor: pointer;
-  transition: background-color 150ms ease-out, transform 100ms ease-out;
+  transition:
+    background-color 150ms ease-out,
+    transform 100ms ease-out;
 }
 
 .submit:hover {

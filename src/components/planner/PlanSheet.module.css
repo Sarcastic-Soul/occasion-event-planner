@@ -5,7 +5,9 @@
   background: var(--sheet);
   border: 1px solid var(--rule);
   padding: 40px 44px;
-  box-shadow: 0 1px 0 var(--rule), 0 18px 40px -28px rgb(60 40 20 / 0.35);
+  box-shadow:
+    0 1px 0 var(--rule),
+    0 18px 40px -28px rgb(60 40 20 / 0.35);
 }
 
 @media (prefers-reduced-motion: no-preference) {

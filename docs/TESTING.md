@@ -1,8 +1,8 @@
 # Testing
 
 ```bash
-bun run check   # tsc --noEmit, eslint, bun test
-bun test        # 57 tests, 136 assertions, 10 files, about 1 s
+bun run check   # tsc --noEmit, eslint, prettier --check, bun test (also runs in GitHub Actions on every push)
+bun test        # 65 tests, 153 assertions, 12 files, about 1 s
 ```
 
 Tests use `bun test`, with `happy-dom` (preloaded through `bunfig.toml` and `tests/dom.ts`) and `@testing-library/react` for components. No test calls the network: Gemini is replaced by a fake `JsonGenerator` or a fake `@google/genai` client.
@@ -18,6 +18,8 @@ Tests use `bun test`, with `happy-dom` (preloaded through `bunfig.toml` and `tes
 | `tests/planner.test.ts` | Rules plus AI | Rules only without AI; AI ideas and tasks merged without changing the budget; fallback on bad JSON, wrong shape or errors; refine output turned into a checked input; AI task ids stable across redrafts |
 | `tests/gemini.test.ts` | Model fallback chain | Next model on 503; stops at once on 400; last error when all fail; empty reply counts as a miss |
 | `tests/server.test.ts` | Server helpers | Rate limiter blocks and resets, and caps tracked clients; LRU eviction order; `readJson` rejects wrong content type, oversize, bad JSON and bad shape |
+| `tests/plan-request.test.ts` | Shared route checks | Valid request passes through; 429 with the route's message after the limit; skewed device date and an event over 3 years away rejected with a field message |
+| `tests/client.test.ts` | Client helpers | Abort errors recognised; a safe message for any thrown value; form messages quote the same limits as the schema; grouped numbers; money formatting per currency |
 | `tests/api.test.ts` | Route handlers end to end | `/api/plan`: rules plan without AI, past date 400 with field path, skewed device date 400, request 21 in a minute gets 429. `/api/refine`: 503 without AI, past date 400, success returns new plan with AI task ids, no change returns `plan: null`, invalid model reply returns 502 |
 | `tests/intake-form.test.tsx` | Form component | Every input has an accessible name; errors linked with `aria-describedby`; change and submit events |
 | `tests/plan-sheet.test.tsx` | Plan component | Each section under its own heading; late and "for you" labels; vendor checkboxes toggle; a stale plan says so and hides Gemini's extras |

@@ -2,18 +2,23 @@
 
 import type { FormEvent } from "react";
 import type { Draft, DraftErrors } from "@/lib/client/draft";
-import { CONSIDERATIONS, CURRENCIES, EVENT_TYPES, SETTINGS, type Consideration } from "@/lib/plan/schema";
+import { CONSIDERATION_LABELS, EVENT_CHOICE_LABELS, SETTING_LABELS } from "@/lib/plan/labels";
+import {
+  CONSIDERATIONS,
+  CURRENCIES,
+  EVENT_TYPES,
+  LIMITS,
+  SETTINGS,
+  type Consideration,
+  type Currency,
+  type EventType,
+} from "@/lib/plan/schema";
 import styles from "./IntakeForm.module.css";
 
-const EVENT_LABELS = { wedding: "Wedding", birthday: "Birthday", community: "Community" } as const;
-const TITLE_PLACEHOLDERS = { wedding: "Asha & Rohan", birthday: "Ananya turns 7", community: "Block B Diwali mela" } as const;
-const SETTING_LABELS = { indoor: "Indoor venue", outdoor: "Outdoor", home: "At home" } as const;
-const CONSIDERATION_LABELS: Record<Consideration, string> = {
-  accessibility: "Wheelchair access",
-  dietary: "Dietary needs",
-  kids: "Lots of children",
-  elderly: "Older guests",
-  eco: "Low waste",
+const TITLE_PLACEHOLDERS: Record<EventType, string> = {
+  wedding: "Asha & Rohan",
+  birthday: "Ananya turns 7",
+  community: "Block B Diwali mela",
 };
 
 interface Props {
@@ -22,7 +27,7 @@ interface Props {
   busy: boolean;
   onChange: (patch: Partial<Draft>) => void;
   onSubmit: () => void | Promise<void>;
-  onEventTypeChange: (eventType: Draft["eventType"]) => void;
+  onEventTypeChange: (eventType: EventType) => void;
 }
 
 export function IntakeForm({ draft, errors, busy, onChange, onSubmit, onEventTypeChange }: Props) {
@@ -60,7 +65,7 @@ export function IntakeForm({ draft, errors, busy, onChange, onSubmit, onEventTyp
                 checked={draft.eventType === t}
                 onChange={() => onEventTypeChange(t)}
               />
-              <span>{EVENT_LABELS[t]}</span>
+              <span>{EVENT_CHOICE_LABELS[t]}</span>
             </label>
           ))}
         </div>
@@ -74,7 +79,7 @@ export function IntakeForm({ draft, errors, busy, onChange, onSubmit, onEventTyp
           id="title"
           className={styles.input}
           value={draft.title}
-          maxLength={80}
+          maxLength={LIMITS.titleLength}
           placeholder={TITLE_PLACEHOLDERS[draft.eventType]}
           onChange={(e) => onChange({ title: e.target.value })}
           aria-invalid={Boolean(errors.title)}
@@ -124,7 +129,7 @@ export function IntakeForm({ draft, errors, busy, onChange, onSubmit, onEventTyp
               aria-label="Currency"
               className={styles.currency}
               value={draft.currency}
-              onChange={(e) => onChange({ currency: e.target.value as Draft["currency"] })}
+              onChange={(e) => onChange({ currency: e.target.value as Currency })}
             >
               {CURRENCIES.map((c) => (
                 <option key={c}>{c}</option>
@@ -190,7 +195,7 @@ export function IntakeForm({ draft, errors, busy, onChange, onSubmit, onEventTyp
           id="notes"
           className={styles.input}
           rows={3}
-          maxLength={500}
+          maxLength={LIMITS.notesLength}
           value={draft.notes}
           placeholder="Space theme, vegetarian menu, grandmother flying in from Pune..."
           onChange={(e) => onChange({ notes: e.target.value })}
